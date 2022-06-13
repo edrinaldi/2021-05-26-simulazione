@@ -11,12 +11,15 @@ public class TestModel {
 		m.localeMigliore();
 		
 		// esempio 2
-		m.creaGrafo("Phoenix", 2005);
-		m.localeMigliore();
+//		m.creaGrafo("Phoenix", 2005);
+//		m.localeMigliore();
 		
 		// esempio 3
-		m.creaGrafo("Tempe", 2013);
-		m.localeMigliore();
+//		m.creaGrafo("Tempe", 2013);
+//		m.localeMigliore();	// sbagliato...
+		
+		Business partenzaTest = m.getVertici().get(2);
+		m.calcolaPercorso(partenzaTest, 0.01);
 
 
 	}

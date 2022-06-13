@@ -1,5 +1,6 @@
 package it.polito.tdp.yelp.model;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -15,11 +16,18 @@ public class Model {
 	private YelpDao dao;
 	private Graph<Business, DefaultWeightedEdge> grafo;
 	private Map<String, Business> idMap;
+	List<Business> percorsoOtt;
+	Business localeMigliore;
+	private int lungMin;
+
 	
 	public Model() {
 		this.dao = new YelpDao();
 		this.idMap = new HashMap<>();
 		this.dao.getAllBusiness(this.idMap);
+		this.percorsoOtt = new ArrayList<>();
+		localeMigliore = null;
+		this.lungMin = 0;
 	}
 	
 	public String creaGrafo(String citta, int anno) {
@@ -37,12 +45,12 @@ public class Model {
 				double avg2 = this.dao.calcolaPeso(b2.getBusinessId(), anno);
 				double peso = avg1-avg2;
 				
-				if(peso < 0) {
+				if(peso > 0) {
 					// scambio source e target
 					Graphs.addEdge(this.grafo, b2, b1, peso);
 				}
-				else if(peso > 0) {
-					Graphs.addEdge(this.grafo, b1, b2, peso);
+				else if(peso < 0) {
+					Graphs.addEdge(this.grafo, b1, b2, -peso);
 				}
 			}
 		}
@@ -55,7 +63,7 @@ public class Model {
 				this.grafo.edgeSet().size());
 	}
 	
-	public Business localeMigliore() {
+	public void localeMigliore() {	// funziona solo per es 1 e 2 ...
 		Business migliore = null;
 		double max = 0.0;
 		for(Business b : this.grafo.vertexSet()) {
@@ -82,13 +90,70 @@ public class Model {
 			}
 		}
 		System.out.printf("LOCALE MIGLIORE: %s\n", migliore.toString());
-		return migliore;
+		this.localeMigliore = migliore;
 	}
+	
+	
 
 	public List<String> getAllCitta() {
 		// TODO Auto-generated method stub
 		return this.dao.getAllCitta();
 	}
 	
+	public void calcolaPercorso(Business partenza, double x) {
+		List<Business> parziale = new ArrayList<>();
+		parziale.add(partenza);
+		this.percorsoOtt = new ArrayList<Business>();
+		this.lungMin = this.grafo.vertexSet().size();
+		this.ricerca(parziale, partenza, x);
+		
+		// console
+		System.out.println("Percorso migliore: " + this.percorsoOtt);
+	}
+
+	private void ricerca(List<Business> parziale, Business partenza, double x) {		
+		if(parziale.contains(this.localeMigliore)) {
+			// ho finito il cammino
+			this.percorsoOtt = new ArrayList<>(parziale);
+			this.lungMin = parziale.size();
+			return;
+		}
+		
+		for(DefaultWeightedEdge e : this.grafo.outgoingEdgesOf(partenza)) {
+			// ho un arco uscente dalla mia partenza
+			if(this.grafo.getEdgeWeight(e) >= x) {				
+				Business target = this.grafo.getEdgeTarget(e);
+				if(parziale.contains(target)) {
+					break;
+				}
+				
+				// provo ad aggiungere il locale
+				parziale.add(target);
+				
+				// verifico la validità della soluzione parziale
+				if(parziale.size() < this.lungMin) {
+					// chiamo la ricorsione
+					this.ricerca(parziale, target, x);
+				}
+				
+				// backtracking
+				parziale.remove(parziale.size()-1);
+			}
+		}
+	}	
 	
+	public List<Business> getPercorso() {
+		return this.percorsoOtt;
+	}
+
+	public List<Business> getVertici() {
+		// TODO Auto-generated method stub
+		List<Business> vertici = new ArrayList<>(this.grafo.vertexSet());
+		return vertici;
+	}
+
+	public Business getLocaleMigliore() {
+		// TODO Auto-generated method stub
+		return this.localeMigliore;
+	}
 }
