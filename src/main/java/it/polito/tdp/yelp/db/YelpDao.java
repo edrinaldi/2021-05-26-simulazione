@@ -6,6 +6,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import it.polito.tdp.yelp.model.Business;
 import it.polito.tdp.yelp.model.Review;
@@ -13,9 +14,8 @@ import it.polito.tdp.yelp.model.User;
 
 public class YelpDao {
 
-	public List<Business> getAllBusiness(){
+	public void getAllBusiness(Map<String, Business> idMap){
 		String sql = "SELECT * FROM Business";
-		List<Business> result = new ArrayList<Business>();
 		Connection conn = DBConnect.getConnection();
 
 		try {
@@ -35,16 +35,15 @@ public class YelpDao {
 						res.getDouble("longitude"),
 						res.getString("state"),
 						res.getDouble("stars"));
-				result.add(business);
+				if(!idMap.containsValue(business)) {
+					idMap.put(res.getString("business_id"), business);
+				}
 			}
 			res.close();
 			st.close();
-			conn.close();
-			return result;
-			
+			conn.close();			
 		} catch (SQLException e) {
 			e.printStackTrace();
-			return null;
 		}
 	}
 	
@@ -110,6 +109,87 @@ public class YelpDao {
 			return null;
 		}
 	}
+
+	public List<String> getAllCitta() {
+		String sql = "SELECT distinct city FROM Business";
+		List<String> result = new ArrayList<String>();
+		Connection conn = DBConnect.getConnection();
+
+		try {
+			PreparedStatement st = conn.prepareStatement(sql);
+			ResultSet res = st.executeQuery();
+			while (res.next()) {
+
+				result.add(res.getString("city"));
+			}
+			res.close();
+			st.close();
+			conn.close();
+			return result;
+			
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+
+	public List<Business> getVertici(String citta, int anno, Map<String, Business> idMap) {
+		String sql = "SELECT distinct b.business_id "
+				+ "FROM Business b, reviews r "
+				+ "where b.business_id=r.business_id "
+				+ "and city=? "
+				+ "and year(review_date)=?";
+		List<Business> result = new ArrayList<Business>();
+		Connection conn = DBConnect.getConnection();
+
+		try {
+			PreparedStatement st = conn.prepareStatement(sql);
+			st.setString(1, citta);
+			st.setInt(2, anno);
+			ResultSet res = st.executeQuery();
+			while (res.next()) {
+				result.add(idMap.get(res.getString("business_id")));
+			}
+			res.close();
+			st.close();
+			conn.close();
+			return result;
+			
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+
+	public Double calcolaPeso(String businessId, int anno) {
+		// TODO Auto-generated method stub
+		String sql = "select avg(stars) as avg "
+				+ "from reviews "
+				+ "where business_id=? "
+				+ "and year(review_date)=?";
+		Double result = null;
+		Connection conn = DBConnect.getConnection();
+
+		try {
+			PreparedStatement st = conn.prepareStatement(sql);
+			st.setString(1, businessId);
+			st.setInt(2, anno);
+
+			ResultSet res = st.executeQuery();
+			while (res.next()) {
+				result = res.getDouble("avg");
+			}
+			res.close();
+			st.close();
+			conn.close();
+			return result;
+			
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+	
 	
 	
 }
